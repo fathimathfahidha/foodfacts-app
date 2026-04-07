@@ -1,49 +1,49 @@
-import { useState } from 'react'
+import Container from '@mui/material/Container'
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
 import SearchBar from '../components/SearchBar'
-import FoodList from '../components/FoodList'
+import FoodCard from '../components/FoodCard'
+import ErrorMessage from '../components/ErrorMessage'
+import useFoodSearch from '../hooks/useFoodSearch'
 
 function HomePage() {
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleSearch = async (query) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const url = `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&page_size=10`
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const products = Array.isArray(data.products) ? data.products : []
-      const filtered = products.filter(
-        (p) => p.product_name && p.product_name.trim() !== ''
-      )
-      setResults(filtered)
-    } catch {
-      setError('Unable to fetch food data. Please try again later.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { results, loading, error, searchFood } = useFoodSearch()
 
   return (
-    <div className="page">
-      <h2>Search Nutrition Info</h2>
-      <SearchBar onSearch={handleSearch} />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom fontWeight={800}>
+        Search Nutrition Info
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Type any food name to see its nutrition facts.
+      </Typography>
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!loading && results.length === 0 && !error && (
-        <p>Search for a food to begin</p>
+      <SearchBar onSearch={searchFood} />
+
+      {error && <ErrorMessage message={error} />}
+
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+          <CircularProgress color="primary" />
+        </Box>
       )}
 
-      <FoodList products={results} />
-    </div>
+      {!loading && results.length === 0 && !error && (
+        <Typography color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+          Search for a food above to see nutrition info.
+        </Typography>
+      )}
+
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+        {results.map(product => (
+          <Grid item xs={12} sm={6} md={4} key={product.id}>
+            <FoodCard product={product} />
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
   )
 }
 
